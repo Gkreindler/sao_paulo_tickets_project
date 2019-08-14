@@ -126,38 +126,53 @@ if __name__ == '__main__':
         marg_part['cum_lengths'] = cum_lengths
 
     """ Read camera locations """
-    camera_locations = ut.csv2dict(ROOT_PATH + "data\cameras\cameras.csv")
+#    camera_locations = ut.csv2dict(ROOT_PATH + "data\cameras\cameras_manual.csv")
+    accident_locations = ut.csv2dict(ROOT_PATH + "data/accidents/accidents/accidents.csv")
 
 
     """ snap each camera to each of the 2 marginais segments """
-    camera_locations_map_matched = []
-    for camera in camera_locations:
+#    camera_locations_map_matched = []
+    accident_locations_map_matched = []
+#    for camera in camera_locations:
+    for accident in accident_locations:
 
-        camera_location = float(camera['long']), float(camera['lat'])
+#        camera_location = float(camera['long']), float(camera['lat'])
+        accident_location = float(accident['long']), float(accident['lat'])
 
         for marg_part in marg_roads:
             road_direction = marg_part['properties']['Direction']
             road_polyline = marg_part['geometry']['coordinates']
-
+            
             closest_point, \
                 distance2route, \
                 seg_idx, \
                 seg_loc, \
-                pos_on_route = dist_pt2route(camera_location,
+                pos_on_route = dist_pt2route(accident_location,                             
                                              route=road_polyline,
                                              route_cum_lengths=marg_part['cum_lengths'],
                                              route_seg_lengths=marg_part['seg_lengths'])
+#                pos_on_route = dist_pt2route(camera_location,
+
 
             # save result
-            camera_new = copy.deepcopy(camera)
-            camera_new['direction'] = road_direction
-            camera_new['mm_lat'] = closest_point[1]
-            camera_new['mm_long'] = closest_point[0]
-            camera_new['mm_pos_on_route'] = pos_on_route
-            camera_new['mm_dist2route'] = distance2route
-            camera_locations_map_matched.append(camera_new)
+#            camera_new = copy.deepcopy(camera)
+#            camera_new['direction'] = road_direction
+#            camera_new['mm_lat'] = closest_point[1]
+#            camera_new['mm_long'] = closest_point[0]
+#            camera_new['mm_pos_on_route'] = pos_on_route
+#            camera_new['mm_dist2route'] = distance2route
+#            camera_locations_map_matched.append(camera_new)
+            accident_new = copy.deepcopy(accident)
+            accident_new['direction'] = road_direction
+            accident_new['mm_lat'] = closest_point[1]
+            accident_new['mm_long'] = closest_point[0]
+            accident_new['mm_pos_on_route'] = pos_on_route
+            accident_new['mm_dist2route'] = distance2route
+            accident_locations_map_matched.append(accident_new)
 
     # save
-    camera_locations_map_matched_file = ROOT_PATH + "data\cameras\cameras_map_matched_mod.csv"
-    ut.dictlist2csv(camera_locations_map_matched, camera_locations_map_matched_file)
+#    camera_locations_map_matched_file = ROOT_PATH + "data\cameras\cameras_map_matched_mod_manual.csv"
+#    ut.dictlist2csv(camera_locations_map_matched, camera_locations_map_matched_file)
+    accident_locations_map_matched_file = ROOT_PATH + "data/accidents/accidents/accidents_map_matched.csv"
+    ut.dictlist2csv(accident_locations_map_matched, accident_locations_map_matched_file)
 
