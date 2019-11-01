@@ -39,6 +39,7 @@ cd "$u"
 import delimited "cameras_map_matched_manual.csv"
 
 // observation is location
+gsort id direction location
 bysort id: keep if _n == 1
 
 // STATA doesn't like long as a variable name
@@ -71,18 +72,14 @@ order location lat lon start_date end_date
 format lat %11.0g
 format lon %11.0g
 
-// duplicates with small typos
-// drop if location == "Av Morvan Dias De Figueiredo (As/Cb), A Menos 36m Rua  Dr. Vidal Reis"
-// drop if location == "Marginal Pinheiros, Expressa, Alt Sup.Extra/Panamby (C.Branco/Interlagos)"
-drop if location == "Marg. Rio Pinheiros, Expressa, Apospte Otavio F Oliveira-Interlagos/C.Branco"
-drop if location == "Av Das Nacoes Unidas-Pista Central-(Interlagos/C. Branco) A Menos 23m Do Km 9,5"
-drop if location == "Av Das Nacoes Unidas-Pista Central-(Interlagos/C.Branco) A Menos 7,3m Do Km 5,5"
-drop if location == "Marg. Pinheiros, Expres., Alt. Superm.Extra/Panamby (Sent Cast. Branco/Interl.)"
-drop if location == "Av Morvan Dias De Figueiredo (As/Cb),  A Menos 36m Rua  Dr. Vidal Reis"
-drop if location == "Av. das NaÃ§Ãµes Unidas  Pista Central (Interlagos/Castelo Branco) a menos 23m do Km 9,5"
-drop if location == "Marg Do Rio Pinheiros, Pista Exp Apospte Otavio F. De Oliveira (Int/C. Branco)"
-drop if location == "Av Morvan Dias De Figueiredo (As/Cb), A Menos 36m Rua  Dr. Vidal Reis"
-drop if location == "Marginal Pinheiros, Expressa, Alt Sup.Extra/Panamby (C.Branco/Interlagos)"
+// for comparing lat lon before and after merge
+rename lat lat_merge
+rename lon lon_merge
+
+// create parsed location variable for merging, without vowels due to special characters
+egen location_parsed = sieve(location), char(0123456789bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ)
+
+bysort location_parsed: keep if _n == _N
 
 // save csv as dta
 save "cameras_map_matched_manual_processed.dta", replace
@@ -90,23 +87,18 @@ save "cameras_map_matched_manual_processed.dta", replace
 // open full camera location dataset
 use "camera_location_nn_temp.dta"
 
-// remove duplicate locations just for merging
-gsort lat_lon location
-bysort lat_lon: keep if _n == 1
-
 // create location variable in string format for merging
 decode location, generate(location0)
 rename location location_coded
 rename location0 location
 
-// merge complete camera dataset with manually processed camera dataset
-merge m:m start_date end_date using "cameras_map_matched_manual_processed.dta"
+// create parsed location variable for merging, without vowels due to special characters
+egen location_parsed = sieve(location), char(0123456789bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ)
 
-// manually fix a few problematic entries
-replace _merge = 3 if location_coded == 46
-replace _merge = 3 if location_coded == 1246
-replace _merge = 3 if location_coded == 719
-replace _merge = 3 if location_coded == 1257
+// merge complete camera dataset with manually processed camera dataset
+merge m:1 location_parsed using "cameras_map_matched_manual_processed.dta"
+
+save "cameras_merged_temp.dta", replace
 
 // keep matched entries
 keep if _merge == 3
@@ -114,6 +106,8 @@ keep if _merge == 3
 // drop location
 drop location
 rename location_coded location
+
+/*
 
 // keep just necessities
 keep location _merge
@@ -156,6 +150,8 @@ merge m:1 lat_lon using "lat_lon_key.dta"
 
 // keep successful matches
 keep if _merge == 3
+
+*/
 
 // need to recalculate nearest neighbors with this modified set
 keep location lat lon lat_lon nvals start_date end_date
@@ -224,4 +220,6 @@ rename nvals multiple_locations
 
 // save completed file
 save "camera_location_nn_marginais.dta", replace
+
+*/
 
