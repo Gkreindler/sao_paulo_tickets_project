@@ -55,7 +55,7 @@ generate tickets_per_day = tickets_total / time_span
 generate ticket_per_month = tickets_per_day * 30
 
 // save processed dataset
-save "camera_location_nn_marginais.dta", replace
+save "camera_location_nn_marginais_new.dta", replace
 
 // keep selected variables for QGIS
 keep location lat lon start_date end_date nn_10 nn_50 nn_100 tickets_total time_span
