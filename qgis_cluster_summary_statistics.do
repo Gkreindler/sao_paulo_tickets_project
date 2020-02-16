@@ -83,6 +83,7 @@ of speed cameras along the marginais in QGIS:
 	However, if camera lead time is positive, it means that the camera was seen in gmaps before the camera began ticketing, which is of interest for the validity of the event study
 	
 	Therefore, camera_lead_time_conditional is created to count the average of the positive values of camera lead time only. */
+	
 	generate camera_lead_time_conditional = camera_lead_time if camera_lead_time > 0 & camera_lead_time != .
 	
 	// summarize lead time variables
@@ -153,15 +154,13 @@ of speed cameras along the marginais in QGIS:
 
 	save "qgis_clustered.dta", replace
 	
-	/* 
-	For cameras that I was able to identify in Google Maps where Google Maps data was detected
+	/* For cameras that I was able to identify in Google Maps where Google Maps data was detected
 	before the cameras began ticketing, we want to identify the gap between the start_date
 	date inferred by Google Maps with the start date inferred by ticketing. The Google Maps start
 	date comes from two measures: 1) the latest month a camera is not seen and 2) the earliest
 	month a camera is seen. We compute two measures here: 1) lower_bound_gap : an 
 	"optimistic" lower bound gap and 2) upper_bound_gap : "pessimistic" upper bound gap.
-	Both measures are calculated at the camera and cluster level.
-	*/
+	Both measures are calculated at the camera and cluster level. */
 	
 	generate lower_bound_gap = .
 	replace lower_bound_gap = start_date - gmaps_seen if start_date > gmaps_seen
@@ -174,6 +173,32 @@ of speed cameras along the marginais in QGIS:
 	
 	generate cluster_upper_bound_gap = .
 	replace cluster_upper_bound_gap = cluster_start_date - cluster_gmaps_unseen if GM_STARTS_EARLIER
+	
+	/* without zeroes filters out observations where cameras appear at the beginning
+	of available history and thus gmaps_seen = gmaps_unseen */
+	
+	generate cluster_lower_bound_wo_zeroes = .
+	replace cluster_lower_bound_wo_zeroes = cluster_lower_bound_gap if cluster_gmaps_seen != cluster_gmaps_unseen
+	
+	generate cluster_upper_bound_wo_zeroes = .
+	replace cluster_upper_bound_wo_zeroes = cluster_upper_bound_gap if cluster_gmaps_seen != cluster_gmaps_unseen
+	
+	/* the previous metric describes the upper and lower bound of the gap conditional on
+	a gap being present. This next metric adds back in to the sample the zeroes from
+	observations that are labeled OK here, ie the observations where the ticketing start date
+	falls after gmaps_unseen but before gmaps_seen */
+	
+	generate cluster_lower_bound_gap_uncond = .
+	replace cluster_lower_bound_gap_uncond = cluster_start_date - cluster_gmaps_seen if GM_STARTS_EARLIER | OK
+	
+	generate cluster_upper_bound_gap_uncond = .
+	replace cluster_upper_bound_gap_uncond = cluster_start_date - cluster_gmaps_unseen if GM_STARTS_EARLIER | OK
+	
+	generate cluster_lower_bound_wo_zeroesu = .
+	replace cluster_lower_bound_wo_zeroesu = cluster_lower_bound_gap_uncond if cluster_gmaps_seen != cluster_gmaps_unseen
+	
+	generate cluster_upper_bound_wo_zeroesu = .
+	replace cluster_upper_bound_wo_zeroesu = cluster_upper_bound_gap_uncond if cluster_gmaps_seen != cluster_gmaps_unseen
 
 }
 
@@ -189,6 +214,12 @@ of speed cameras along the marginais in QGIS:
 	tab GM_NODATA
 	summarize cluster_lower_bound_gap, detail
 	summarize cluster_upper_bound_gap, detail
+	summarize cluster_lower_bound_wo_zeroes, detail
+	summarize cluster_upper_bound_wo_zeroes, detail
+	summarize cluster_lower_bound_wo_zeroesu, detail
+	summarize cluster_upper_bound_wo_zeroesu, detail
+	
+	/*
 
 	// show tabbed results for single camera clusters
 	keep if cluster_size == 1
@@ -196,6 +227,8 @@ of speed cameras along the marginais in QGIS:
 	tab GM_STARTS_EARLIER
 	tab GM_STARTS_LATER
 	tab GM_NODATA
+	
+	*/
 
 }
 
