@@ -7,7 +7,7 @@ of speed cameras along the marginais in QGIS:
 
 (2) generate camera level statistics, count, lead times and distribution
 
-(3) cluster count, distriution of cluster size, generate cluster level variables
+(3) cluster count, distribution of cluster size, generate cluster level variables
 
 (4) generate cluster level variables and merge back into camera level dataset
 
@@ -24,7 +24,7 @@ of speed cameras along the marginais in QGIS:
 	cd "$s"
 
 	// import csv files and save as .dta
-	import delimited "qgis_clustered_raw.csv"
+	import delimited "qgis_clustered_raw.csv", encoding(utf-8)
 	save "qgis_clustered_raw.dta", replace
 	import delimited "qgis_camera_links.csv", clear
 	rename ïfid fid // can't figure out why this text encoding error happens on import
@@ -33,10 +33,22 @@ of speed cameras along the marginais in QGIS:
 
 	// merge with links data
 	merge 1:1 fid using "qgis_camera_links.dta"
-	drop _merge
+	drop _merge 
 
 	// drop empty observations with missing lat
 	drop if lat == .
+	
+	// edit some typos in raw data
+	replace cluster = 100 if fid == 11
+	replace cluster = 101 if fid == 136
+	replace cluster = 102 if fid == 139
+	replace gmaps_unseen = "0" if fid == 139
+	replace gmaps_seen = "0" if fid == 139
+	replace cluster = 103 if fid == 134
+	replace gmaps_unseen = "0" if fid == 134
+	replace gmaps_seen = "0" if fid == 134
+	replace lat = -23.52685 if fid == 149
+	replace lon = -46.595074 if fid == 149
 
 	// clean up date formatting
 	generate start_date2 = date(start_date, "DM20Y")
@@ -55,6 +67,10 @@ of speed cameras along the marginais in QGIS:
 	rename end_date2 end_date
 	rename gmaps_unseen2 gmaps_unseen
 	rename gmaps_seen2 gmaps_seen
+	
+	// handle temporary cameras
+	generate temp = 0
+	replace temp = 1 if gmaps_seen == .
 
 }
 
@@ -115,16 +131,18 @@ of speed cameras along the marginais in QGIS:
 { // (4) generate cluster level variables and merge back into camera level dataset
 
 	// collapse to identify minimum start date across clusters
-	collapse (min) start_date gmaps_seen gmaps_unseen, by(cluster)
+	collapse (min) start_date gmaps_seen gmaps_unseen (max) end_date, by(cluster)
 
 	// generate cluster level variables
 	generate cluster_start_date = start_date
+	generate cluster_end_date = end_date
 	generate cluster_gmaps_seen = gmaps_seen
 	generate cluster_gmaps_unseen = gmaps_unseen
 	generate cluster_gmaps_lead_time = cluster_gmaps_seen - cluster_gmaps_unseen
 
 	// format cluster level date variables
 	format cluster_start_date %dM_d,_CY
+	format cluster_end_date %dM_d,_CY
 	format cluster_gmaps_seen %dM_d,_CY
 	format cluster_gmaps_unseen %dM_d,_CY
 
@@ -199,6 +217,8 @@ of speed cameras along the marginais in QGIS:
 	
 	generate cluster_upper_bound_wo_zeroesu = .
 	replace cluster_upper_bound_wo_zeroesu = cluster_upper_bound_gap_uncond if cluster_gmaps_seen != cluster_gmaps_unseen
+	
+	save "qgis_clustered.dta", replace
 
 }
 
