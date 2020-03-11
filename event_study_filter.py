@@ -148,8 +148,8 @@ for direction in directions:
                     cprime_earliest_date = min(cprime_start_date, cprime_gmaps_seen)
 
                 # the bad condition
-                if not ((cprime_end_date < c1_start_date - EVENT_PERIOD) or
-                        (cprime_start_date > c1_start_date + EVENT_PERIOD)):
+                if not ((cprime_end_date < c1_earliest_date - EVENT_PERIOD) or
+                        (cprime_start_date > c1_earliest_date + EVENT_PERIOD)):
                     current_c2_is_good = False
 
             # survived all intermediary c'
@@ -157,3 +157,4 @@ for direction in directions:
                 event_study_pairs.append([i, k, direction])
 
 pprint(event_study_pairs)
+pprint(len(event_study_pairs))
