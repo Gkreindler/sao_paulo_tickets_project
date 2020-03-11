@@ -1,0 +1,15 @@
+
+
+# Code tickets data
+run "coding-data/rds_to_csv.R"
+	input:  data\tickets\all_tickets.rds
+	output: data\tickets_v2\tickets.dta
+
+# Data with unique camera ID:
+	gis\camera_locations2\qgis_clustered.dta
+
+# Process the tickets data
+	...
+
+# Creating the unique ID
+
